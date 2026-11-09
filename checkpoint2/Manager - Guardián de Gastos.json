@@ -1,0 +1,671 @@
+{
+  "name": "Manager - Guardián de Gastos",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -432,
+        -48
+      ],
+      "id": "ccf8b3e4-55d6-4447-b857-67792d8b8638",
+      "name": "When chat message received",
+      "webhookId": "5dbc9cb4-dc98-4b87-a8b2-810dc55907ca"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres el Router de Triaje del área de Administración de Textil Nordelta. Tu única tarea es clasificar el mensaje en UNA categoría de esta lista cerrada. NUNCA inventes otra categoría ni le respondas al usuario.\n- RENDICION: el empleado informa un gasto que quiere que le reintegren (aunque falten datos, como el monto o el concepto) o responde a una pregunta sobre una rendición en curso.\n- RRHH: pide algo que debe resolver una persona: sueldos, adelantos, vacaciones o reclamos.\n- OTRO: saludos, preguntas generales o temas ajenos a la empresa.\nSi dudas entre RENDICION y otra categoría, elige RENDICION.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -208,
+        -48
+      ],
+      "id": "5c566bfa-736b-4e48-8589-471e1583240c",
+      "name": "Router"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-5-5",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 5.5"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        -352,
+        160
+      ],
+      "id": "cb42d2b7-d7b5-4569-b669-5458cc8fef06",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "Ncv2O7XFBNAK5NJj",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"categoria\": \"RENDICION\" }"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -48,
+        160
+      ],
+      "id": "9f480f08-4327-4548-bfa2-a60950ab57dd",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 4
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -224,
+        160
+      ],
+      "id": "2c8a7fe3-0a44-45cb-a9a8-befd46bb44c5",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.categoria }}",
+                    "rightValue": "RENDICION",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "409cb479-9897-4d60-800f-788acf4999ce"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rendición"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "5178e0f1-4988-4a11-91ea-e3ee63410462",
+                    "leftValue": "={{ $json.output.categoria }}",
+                    "rightValue": "RRHH",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RRHH"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "d25e6fb8-9f0c-4219-aeae-c225ee469e0d",
+                    "leftValue": "={{ $json.output.categoria }}",
+                    "rightValue": "OTRO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Otro"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Sin clasificar"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        160,
+        -48
+      ],
+      "id": "47e6dd02-6afa-4532-8fd2-cd0b8bb49c8d",
+      "name": "Enrutamiento"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84413e7d-805f-4ef7-8a34-645069ad1ceb",
+              "name": "texto",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "adc37762-2606-4321-a5c7-4262e5c0406c",
+              "name": "sesion",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        416,
+        -288
+      ],
+      "id": "087857bf-4682-43e9-91a2-b01d72351184",
+      "name": "Payload Validador"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "bE2xLuX9kudKivIc",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bE2xLuX9kudKivIc",
+          "cachedResultName": "Worker 1 - Validador"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "texto": "={{ $json.texto }}",
+            "sesion": "={{ $json.sesion }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sesion",
+              "displayName": "sesion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        640,
+        -288
+      ],
+      "id": "f527543a-c2e6-494e-a915-0e63139a0bf8",
+      "name": "Llamar Validador"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a88de816-4682-49ed-81af-b9ec5ab1f0d3",
+              "name": "decision",
+              "value": "={{ $json.data.decision }}",
+              "type": "string"
+            },
+            {
+              "id": "1b62f316-c093-4cfe-ad29-f4a42ad3e4f6",
+              "name": "categoria",
+              "value": "={{ $json.data.categoria }}",
+              "type": "string"
+            },
+            {
+              "id": "3e315c13-33d3-48ea-b1be-4d34586bf36f",
+              "name": "monto",
+              "value": "={{ $json.data.monto }}",
+              "type": "string"
+            },
+            {
+              "id": "c35ee10a-472b-47b6-adf5-040f98de13f4",
+              "name": "=motivo",
+              "value": "={{ $json.data.motivo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        864,
+        -288
+      ],
+      "id": "33d4752e-c540-4238-9d4c-77d6735eff0c",
+      "name": "Payload Redactor"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "UlXkyN3RWBaKf2mX",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/UlXkyN3RWBaKf2mX",
+          "cachedResultName": "Worker 2 - Redactor"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "decision": "={{ $json.decision }}",
+            "categoria": "={{ $json.categoria }}",
+            "monto": "={{ $json.monto }}",
+            "motivo": "={{ $json.motivo }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "decision",
+              "displayName": "decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "monto",
+              "displayName": "monto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        1088,
+        -288
+      ],
+      "id": "18b9780e-b85a-46c2-9c1d-4b704c2565e2",
+      "name": "Llamar Redactor"
+    },
+    {
+      "parameters": {
+        "sendTo": "jabrahanba@gmail.com",
+        "subject": "[LOG] Guardián de Gastos · Manager",
+        "emailType": "text",
+        "message": "={{ 'Rendición: ' + $('When chat message received').item.json.chatInput + '\\n\\nRouter: ' + $('Router').item.json.output.categoria + '\\nWorker 1 Validador (' + $('Llamar Validador').item.json.status + '): ' + JSON.stringify($('Llamar Validador').item.json.data) + '\\nWorker 2 Redactor (' + $('Llamar Redactor').item.json.status + ')\\n\\nRespuesta enviada:\\n' + $('Llamar Redactor').item.json.data.mensaje + '\\n\\nSesión: ' + $('When chat message received').item.json.sessionId }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1312,
+        -288
+      ],
+      "id": "cc012d62-f897-4ff9-a6ee-7ee8dc4858e3",
+      "name": "log_observabilidad",
+      "webhookId": "9aa69688-76ab-4825-a66c-9a679ec981c0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3cdJeZ1bpPlZ1iSs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8c34f0f3-2f5a-4d2c-9d87-495d256d26ab",
+              "name": "output",
+              "value": "={{ $('Llamar Redactor').item.json.data.mensaje }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1536,
+        -288
+      ],
+      "id": "68c0dfdd-b649-4953-b030-bcc2d94fd097",
+      "name": "Respuesta al chat"
+    },
+    {
+      "parameters": {
+        "sendTo": "jabrahanba@gmail.com",
+        "subject": "[ESCALAMIENTO] Guardián de Gastos ",
+        "emailType": "text",
+        "message": "={{ 'Pedido derivado a un humano.\\n\\nMensaje: ' + $('When chat message received').item.json.chatInput + '\\nCategoría del Router: ' + $('Router').item.json.output.categoria + '\\nSesión: ' + $('When chat message received').item.json.sessionId }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -96
+      ],
+      "id": "7be4b8de-b93b-42b1-92ed-73a4ed88d6ab",
+      "name": "Escalar a supervisor",
+      "webhookId": "0676d106-3793-4ed4-8198-eb3a108997f0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3cdJeZ1bpPlZ1iSs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ee41626-c9a3-4998-baf1-a4a6b444c13b",
+              "name": "output",
+              "value": "Tu pedido no es una rendición de gastos y debe resolverlo una persona del equipo. Ya lo derivé a Administración. Caso derivado a revisión humana.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        656,
+        -96
+      ],
+      "id": "67cc6b66-ff80-45f0-a52f-2df4efc12436",
+      "name": "Respuesta RRHH"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f9f80733-c7d5-485a-acc9-d4a123eb4e04",
+              "name": "output",
+              "value": "Hola, soy el Guardián de Gastos de Textil Nordelta. Solo evalúo rendiciones: cuéntame en qué gastaste, el monto y si tienes el comprobante.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        384,
+        48
+      ],
+      "id": "6f632f53-6ab2-46ff-ac21-97ff2aeba8a6",
+      "name": "Respuesta fija"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router": {
+      "main": [
+        [
+          {
+            "node": "Enrutamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrutamiento": {
+      "main": [
+        [
+          {
+            "node": "Payload Validador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Escalar a supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta fija",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Escalar a supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Validador": {
+      "main": [
+        [
+          {
+            "node": "Llamar Validador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar Validador": {
+      "main": [
+        [
+          {
+            "node": "Payload Redactor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Redactor": {
+      "main": [
+        [
+          {
+            "node": "Llamar Redactor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar Redactor": {
+      "main": [
+        [
+          {
+            "node": "log_observabilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_observabilidad": {
+      "main": [
+        [
+          {
+            "node": "Respuesta al chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalar a supervisor": {
+      "main": [
+        [
+          {
+            "node": "Respuesta RRHH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b92f3c70-7875-4fef-94c2-e66409075926",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "13227c509c72e4d00dbb79fa5f0632cbb482a1085bae491a702e4ac1d708d7ce"
+  },
+  "nodeGroups": [],
+  "id": "80LEYtU9B53DseCa",
+  "tags": []
+}
