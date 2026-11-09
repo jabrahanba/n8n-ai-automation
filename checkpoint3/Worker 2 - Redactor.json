@@ -1,0 +1,207 @@
+{
+  "name": "Worker 2 - Redactor",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "decision"
+            },
+            {
+              "name": "categoria"
+            },
+            {
+              "name": "monto"
+            },
+            {
+              "name": "motivo"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        -80
+      ],
+      "id": "d1ee702b-8ab2-436e-970b-ee0f71dbc993",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Decisión: {{ $json.decision }}\nCategoría: {{ $json.categoria }}\nMonto: {{ $json.monto }}\nMotivo: {{ $json.motivo }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Eres el redactor de respuestas del área de Administración de Textil Nordelta. Recibes una decisión ya tomada sobre una rendición de gastos y redactas el mensaje para el empleado. NO cambias la decisión, no agregas datos, límites ni condiciones que no estén en el motivo, y no prometes plazos. Reglas: - Primera línea, exactamente: DECISIÓN: <decisión> | Categoría: <categoría> | Monto: <monto> - Después, 2 o 3 frases claras y cordiales, sin lenguaje inclusivo. - Si la decisión es FALTA UN DATO, termina pidiendo exactamente el dato indicado en el motivo. - Si la decisión es ESCALADO, termina exactamente con: Caso derivado a revisión humana.\n\n- Si el motivo menciona más de un dato faltante, pídelos todos, uno por uno."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -128,
+        -80
+      ],
+      "id": "6741c7fa-f472-4d70-8950-6508d328bbcd",
+      "name": "Basic LLM Chain",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-5-5",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 5.5"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        -144,
+        144
+      ],
+      "id": "e867641a-30c4-4d73-b09a-1f9b48362a4b",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "Ncv2O7XFBNAK5NJj",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "38c33444-be4a-4c2a-81e7-ebd108d142d7",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "280b1666-8eb9-4dbf-bd20-5fa468d7e215",
+              "name": "data",
+              "value": "={{ { mensaje: $json.text } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        240,
+        -80
+      ],
+      "id": "c0358f08-edf1-4cb6-acf0-19ee982ca4f2",
+      "name": "Contrato de salida"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e95f8ef5-812f-4b5c-aeee-01fc3a5b225e",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "1b774ad9-3337-4187-8a04-798b59ba50db",
+              "name": "message",
+              "value": "El redactor no pudo generar la respuesta",
+              "type": "string"
+            },
+            {
+              "id": "9d32f42b-4aba-452a-ad5f-431042ea221a",
+              "name": "data",
+              "value": "={{ { mensaje: 'Recibimos tu rendición, pero hubo un problema técnico al responder. Un especialista la revisará. Caso derivado a revisión humana.' } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        272,
+        96
+      ],
+      "id": "e27af120-01b3-434d-9b5e-331756db8b4f",
+      "name": "Contrato de error"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Contrato de salida",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Contrato de error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": 60,
+    "availableInMCP": false
+  },
+  "versionId": "bd7cc6e8-2cac-4282-8651-2fd330108b39",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "13227c509c72e4d00dbb79fa5f0632cbb482a1085bae491a702e4ac1d708d7ce"
+  },
+  "nodeGroups": [],
+  "id": "UlXkyN3RWBaKf2mX",
+  "tags": []
+}
