@@ -1,0 +1,2101 @@
+{
+  "name": "checkpoint4_joseabrahan_bonilla",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Limpiar payload').first().json.chatInput }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres el Router de Triaje del área de Administración de Textil Nordelta. Tu única tarea es clasificar el mensaje en UNA categoría de esta lista cerrada. NUNCA inventes otra categoría ni le respondas al usuario.\n- RENDICION: el empleado informa un gasto que quiere que le reintegren (aunque falten datos, como el monto o el concepto) o responde a una pregunta sobre una rendición en curso.\n- RRHH: pide algo que debe resolver una persona: sueldos, adelantos, vacaciones o reclamos.\n- OTRO: saludos, preguntas generales o temas ajenos a la empresa.\nSi dudas entre RENDICION y otra categoría, elige RENDICION.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -864,
+        -176
+      ],
+      "id": "6062142a-dd0d-4a61-86f7-43ee571bbe2a",
+      "name": "Router"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-5-5",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 5.5"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        -864,
+        96
+      ],
+      "id": "34498ad1-4799-4559-946f-731abfe55af9",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "Ncv2O7XFBNAK5NJj",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"categoria\": \"RENDICION\" }"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -720,
+        96
+      ],
+      "id": "cecbd6c3-25a6-4424-94c4-434e76276613",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Limpiar payload').first().json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        112,
+        560
+      ],
+      "id": "01c0ab14-6649-4507-8c7d-18fcddca3c54",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.categoria }}",
+                    "rightValue": "RENDICION",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "409cb479-9897-4d60-800f-788acf4999ce"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rendición"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "5178e0f1-4988-4a11-91ea-e3ee63410462",
+                    "leftValue": "={{ $json.output.categoria }}",
+                    "rightValue": "RRHH",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RRHH"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "d25e6fb8-9f0c-4219-aeae-c225ee469e0d",
+                    "leftValue": "={{ $json.output.categoria }}",
+                    "rightValue": "OTRO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Otro"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Sin clasificar"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        -592,
+        -208
+      ],
+      "id": "e3ce5f99-a34e-4116-b4a4-41b3ffa8cd4c",
+      "name": "Enrutamiento"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84413e7d-805f-4ef7-8a34-645069ad1ceb",
+              "name": "texto",
+              "value": "={{ $('Limpiar payload').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "adc37762-2606-4321-a5c7-4262e5c0406c",
+              "name": "sesion",
+              "value": "={{ $('Limpiar payload').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "a30d4a21-cc63-48e9-bd6a-5995da6d8501",
+              "name": "memoria",
+              "value": "={{ `Empleado: ${$('Ficha').first().json.nombre}\nEstado del caso: ${$('Ficha').first().json.estado || 'sin estado'}\nResumen consolidado: ${$('Ficha').first().json.resumen || 'sin resumen todavía'}\nDatos clave: ${$('Ficha').first().json.datos_clave || 'sin datos todavía'}\nPróximo paso: ${$('Ficha').first().json.proximo_paso || 'sin definir'}\nMensajes recientes: ${JSON.stringify($('Leer historial').first().json.messages)}` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        128,
+        -624
+      ],
+      "id": "81e15613-44b2-4fc1-96d2-f48a4e787eb7",
+      "name": "Payload Validador"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "bE2xLuX9kudKivIc",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bE2xLuX9kudKivIc",
+          "cachedResultName": "Worker 1 - Validador"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "texto": "={{ $json.texto }}",
+            "sesion": "={{ $json.sesion }}",
+            "memoria": "={{ $json.memoria }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sesion",
+              "displayName": "sesion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "memoria",
+              "displayName": "memoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        144,
+        -416
+      ],
+      "id": "409ac2cf-2d3f-455a-945c-e6188f83ab04",
+      "name": "Llamar Validador"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a88de816-4682-49ed-81af-b9ec5ab1f0d3",
+              "name": "decision",
+              "value": "={{ $json.data.decision }}",
+              "type": "string"
+            },
+            {
+              "id": "1b62f316-c093-4cfe-ad29-f4a42ad3e4f6",
+              "name": "categoria",
+              "value": "={{ $json.data.categoria }}",
+              "type": "string"
+            },
+            {
+              "id": "3e315c13-33d3-48ea-b1be-4d34586bf36f",
+              "name": "monto",
+              "value": "={{ $json.data.monto }}",
+              "type": "string"
+            },
+            {
+              "id": "c35ee10a-472b-47b6-adf5-040f98de13f4",
+              "name": "=motivo",
+              "value": "={{ $json.data.motivo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        144,
+        -208
+      ],
+      "id": "3ac6f971-3573-4cbf-8574-ad0b4f32e7e1",
+      "name": "Payload Redactor"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "UlXkyN3RWBaKf2mX",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/UlXkyN3RWBaKf2mX",
+          "cachedResultName": "Worker 2 - Redactor"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "decision": "={{ $json.decision }}",
+            "categoria": "={{ $json.categoria }}",
+            "monto": "={{ $json.monto }}",
+            "motivo": "={{ $json.motivo }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "decision",
+              "displayName": "decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "monto",
+              "displayName": "monto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        144,
+        0
+      ],
+      "id": "21596f51-c298-4164-b957-15fbb0fed90c",
+      "name": "Llamar Redactor"
+    },
+    {
+      "parameters": {
+        "sendTo": "jabrahanba@gmail.com",
+        "subject": "[LOG] Guardián de Gastos · Manager",
+        "emailType": "text",
+        "message": "={{ 'Rendición: ' + $('Limpiar payload').item.json.chatInput + '\\n\\nRouter: ' + $('Router').item.json.output.categoria + '\\nWorker 1 Validador (' + $('Llamar Validador').item.json.status + '): ' + JSON.stringify($('Llamar Validador').item.json.data) + '\\nWorker 2 Redactor (' + $('Llamar Redactor').item.json.status + ')\\n\\nRespuesta enviada:\\n' + $('Llamar Redactor').item.json.data.mensaje + '\\n\\nSesión: ' + $('Limpiar payload').item.json.sessionId }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        0
+      ],
+      "id": "dfaed766-d4b2-4a46-a09d-984ca4a66ed0",
+      "name": "log_observabilidad",
+      "webhookId": "498eb9bb-587d-40be-ac2a-a2f2c263f56e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3cdJeZ1bpPlZ1iSs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8c34f0f3-2f5a-4d2c-9d87-495d256d26ab",
+              "name": "output",
+              "value": "={{ $('Llamar Redactor').item.json.data.mensaje }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1664,
+        -224
+      ],
+      "id": "6f6726d7-ca6a-449c-8fb8-782561c640a2",
+      "name": "Respuesta al chat"
+    },
+    {
+      "parameters": {
+        "sendTo": "jabrahanba@gmail.com",
+        "subject": "[ESCALAMIENTO] Guardián de Gastos ",
+        "emailType": "text",
+        "message": "={{ 'Pedido derivado a un humano.\\n\\nMensaje: ' + $('Limpiar payload').item.json.chatInput + '\\nCategoría del Router: ' + $('Router').item.json.output.categoria + '\\nSesión: ' + $('Limpiar payload').item.json.sessionId }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        0
+      ],
+      "id": "35c78d19-40d1-4636-93a6-e073cbd83745",
+      "name": "Escalar a supervisor",
+      "webhookId": "8f6906b6-9ab8-4631-a9fb-9ab327728963",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3cdJeZ1bpPlZ1iSs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ee41626-c9a3-4998-baf1-a4a6b444c13b",
+              "name": "output",
+              "value": "Tu pedido no es una rendición de gastos y debe resolverlo una persona del equipo. Ya lo derivé a Administración. Caso derivado a revisión humana.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "eefb485a-968b-4d6c-a36a-195ffe84a2fe",
+      "name": "Respuesta RRHH"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f9f80733-c7d5-485a-acc9-d4a123eb4e04",
+              "name": "output",
+              "value": "Hola, soy el Guardián de Gastos de Textil Nordelta. Solo evalúo rendiciones: cuéntame en qué gastaste, el monto y si tienes el comprobante.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -304,
+        -176
+      ],
+      "id": "181379b5-521f-4be3-bf2e-e754e41b2686",
+      "name": "Respuesta fija"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fbc3c7cc-d729-49aa-8c4b-32d85cffc7dc",
+              "name": "Session_ID",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "e6996c37-8e79-48bc-ba3e-620c8e5944ff",
+              "name": "Nombre",
+              "value": "={{ $json.nombre }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1248,
+        -336
+      ],
+      "id": "cf4c40fe-7655-4816-855a-fc943c86586b",
+      "name": "Identificar empleado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "539dbc29-dc01-4a37-a5a0-5db8e3fb3cf2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -1376,
+        -96
+      ],
+      "id": "3e260b19-242a-4a91-a97f-57ddeb6d99b7",
+      "name": "¿Tiene ficha?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "997490c4-888d-4593-aa12-ce6d7b600403",
+              "name": "ficha_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "71ddedef-304f-49d3-8f2d-c0a01bc55fcb",
+              "name": "nombre",
+              "value": "={{ $json.fields.Nombre || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "39fe16b0-5794-4abb-80bc-2338158b6e97",
+              "name": "estado",
+              "value": "={{ $json.fields['Estado del Caso'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "c158df17-06a0-48a4-849b-e6db1d4306e6",
+              "name": "resumen",
+              "value": "={{ $json.fields['Resumen Consolidado'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8ae88ccb-e685-4ed0-a60f-df34e77c17f3",
+              "name": "datos_clave",
+              "value": "={{ $json.fields['Datos Clave'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "9f97b095-0865-4caa-952c-238e90547931",
+              "name": "proximo_paso",
+              "value": "={{ $json.fields['Próximo Paso'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "174df6cf-f203-4d05-a587-2eceda3ee4dd",
+              "name": "mensajes",
+              "value": "={{ ($json.fields.Mensajes || 0) + 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1008,
+        -48
+      ],
+      "id": "ec4cd39f-37ba-4073-af61-209366c30a83",
+      "name": "Ficha"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "app1MANN9uNjJ7W1Z",
+          "mode": "list",
+          "cachedResultName": "Guardián de Gastos",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbNNJZhUiP6XyUJ",
+          "mode": "list",
+          "cachedResultName": "Memoria",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z/tblbNNJZhUiP6XyUJ"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Ficha').first().json.ficha_id }}",
+            "Mensajes": "={{ $('Ficha').first().json.mensajes }}",
+            "Estado del Caso": "={{ { 'APROBADO': 'resuelto', 'FALTA UN DATO': 'en proceso', 'ESCALADO': 'escalado' }[$('Llamar Validador').first().json.data.decision] || 'en proceso' }}",
+            "Fecha de Actualización": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Session_ID",
+              "displayName": "Session_ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fecha de Actualización",
+              "displayName": "Fecha de Actualización",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensajes",
+              "displayName": "Mensajes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado del Caso",
+              "displayName": "Estado del Caso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "en proceso",
+                  "value": "en proceso"
+                },
+                {
+                  "name": "recibido",
+                  "value": "recibido"
+                },
+                {
+                  "name": "escalado",
+                  "value": "escalado"
+                },
+                {
+                  "name": "resuelto",
+                  "value": "resuelto"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resumen Consolidado",
+              "displayName": "Resumen Consolidado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Datos Clave",
+              "displayName": "Datos Clave",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Próximo Paso",
+              "displayName": "Próximo Paso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        -112
+      ],
+      "id": "0a2678ed-4b80-476f-aa4c-4edf2f4d1c47",
+      "name": "Actualizar ficha",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "VTji1BbtAQ17FrlE",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "248c8569-dcc8-40f3-b53f-e29f213be0b8",
+              "leftValue": "={{ $json.fields.Mensajes }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        560,
+        -240
+      ],
+      "id": "8d00e034-8062-459f-a288-b4e6fce5b585",
+      "name": "¿Más de 5 mensajes?"
+    },
+    {
+      "parameters": {
+        "options": {
+          "groupMessages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        -352
+      ],
+      "id": "a0bf308d-9c94-4b4e-8043-a0944bee1292",
+      "name": "Leer la mesa"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-5-5",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 5.5"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        960,
+        -512
+      ],
+      "id": "109433a4-6429-4d1b-8aca-ae1943e68bea",
+      "name": "Anthropic Chat Model1",
+      "credentials": {
+        "anthropicApi": {
+          "id": "Ncv2O7XFBNAK5NJj",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"asunto_principal\": { \"type\": \"string\" },\n    \"puntos_clave\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"accion_requerida\": { \"type\": \"string\" }\n  },\n  \"required\": [\"asunto_principal\", \"puntos_clave\", \"accion_requerida\"],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        -512
+      ],
+      "id": "fd9a7a76-4f2e-445e-9ebc-662eb25a9b51",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Empleado: {{ $('Ficha').first().json.nombre }}\nResumen anterior: {{ $('Ficha').first().json.resumen || 'no hay' }}\nDatos anteriores: {{ $('Ficha').first().json.datos_clave || 'no hay' }}\nPróximo paso anterior: {{ $('Ficha').first().json.proximo_paso || 'no hay' }}\nÚltima decisión del validador: {{ JSON.stringify($('Llamar Validador').first().json.data) }}\n\nHistorial de esta conversación:\n{{ JSON.stringify($json.messages) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Eres un analista que condensa conversaciones de rendiciones de gastos para guardarlas en una base de datos. Lee el historial y devuelve EXACTAMENTE un objeto JSON con tres claves: - asunto_principal: una frase con la rendición o el pedido central del empleado. - puntos_clave: una lista de 2 a 5 hechos accionables (gastos rendidos con categoría y monto, decisiones tomadas, datos o comprobantes pendientes). Nada de saludos ni opiniones. - accion_requerida: la próxima acción concreta, del empleado o de Administración, en una frase. Reglas: no inventes datos que no estén en el historial, el resumen anterior o la última decisión; integra el resumen anterior con lo nuevo y conserva sus datos salvo que el empleado los corrija; no copies la conversación textual; nunca guardes contraseñas, números de tarjeta ni datos bancarios."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        944,
+        -352
+      ],
+      "id": "6f942538-a574-4a81-aab9-ea397523a47e",
+      "name": "Resumir"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "app1MANN9uNjJ7W1Z",
+          "mode": "list",
+          "cachedResultName": "Guardián de Gastos",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbNNJZhUiP6XyUJ",
+          "mode": "list",
+          "cachedResultName": "Memoria",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z/tblbNNJZhUiP6XyUJ"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Ficha').first().json.ficha_id }}",
+            "Resumen Consolidado": "={{ $json.output.asunto_principal }}",
+            "Datos Clave": "={{ $json.output.puntos_clave.join(' · ') }}",
+            "Próximo Paso": "={{ $json.output.accion_requerida }}",
+            "Mensajes": 0,
+            "Fecha de Actualización": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Session_ID",
+              "displayName": "Session_ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha de Actualización",
+              "displayName": "Fecha de Actualización",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensajes",
+              "displayName": "Mensajes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado del Caso",
+              "displayName": "Estado del Caso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "en proceso",
+                  "value": "en proceso"
+                },
+                {
+                  "name": "recibido",
+                  "value": "recibido"
+                },
+                {
+                  "name": "escalado",
+                  "value": "escalado"
+                },
+                {
+                  "name": "resuelto",
+                  "value": "resuelto"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resumen Consolidado",
+              "displayName": "Resumen Consolidado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Datos Clave",
+              "displayName": "Datos Clave",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Próximo Paso",
+              "displayName": "Próximo Paso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -352
+      ],
+      "id": "08510636-f414-4a7a-a40e-ea6e0ae467ad",
+      "name": "Guardar resumen",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "VTji1BbtAQ17FrlE",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "delete",
+        "deleteMode": "all"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        -352
+      ],
+      "id": "8a74ba0e-7a7e-4bf8-b15a-0e89a891392c",
+      "name": "Borrar la mesa"
+    },
+    {
+      "parameters": {
+        "options": {
+          "groupMessages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        -432
+      ],
+      "id": "a9e0a113-b3b4-4ae9-bd6d-86a703c5d1c0",
+      "name": "Leer historial"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "app1MANN9uNjJ7W1Z",
+          "mode": "list",
+          "cachedResultName": "Guardián de Gastos",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbNNJZhUiP6XyUJ",
+          "mode": "list",
+          "cachedResultName": "Memoria",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z/tblbNNJZhUiP6XyUJ"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Session_ID": "={{ $('Identificar empleado').first().json.Session_ID }}",
+            "Nombre": "={{ $('Identificar empleado').first().json.Nombre }}",
+            "Fecha de Actualización": "={{ $now.toISO() }}",
+            "Mensajes": 0,
+            "Estado del Caso": "recibido"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Session_ID",
+              "displayName": "Session_ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha de Actualización",
+              "displayName": "Fecha de Actualización",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensajes",
+              "displayName": "Mensajes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado del Caso",
+              "displayName": "Estado del Caso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "en proceso",
+                  "value": "en proceso"
+                },
+                {
+                  "name": "recibido",
+                  "value": "recibido"
+                },
+                {
+                  "name": "escalado",
+                  "value": "escalado"
+                },
+                {
+                  "name": "resuelto",
+                  "value": "resuelto"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resumen Consolidado",
+              "displayName": "Resumen Consolidado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Datos Clave",
+              "displayName": "Datos Clave",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Próximo Paso",
+              "displayName": "Próximo Paso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1152,
+        32
+      ],
+      "id": "f772e4a4-d21d-434c-b446-d23f28619b6e",
+      "name": "Crear ficha",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "VTji1BbtAQ17FrlE",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "=-from:me in:inbox"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1936,
+        -400
+      ],
+      "id": "c35df041-b9aa-49c3-a504-e65b84bfe687",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3cdJeZ1bpPlZ1iSs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1584,
+        -480
+      ],
+      "id": "ab7ac7bb-9b8c-47be-8702-2202abac3bf6",
+      "name": "Stop: auto-reply ignorado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "223c2898-f520-4625-89ab-be32832a6696",
+              "leftValue": "={{ $json.sessionId }}",
+              "rightValue": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "220e4599-b368-4d66-8c79-4e0d0f133a7f",
+              "leftValue": "={{ $json.chatInput }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -1440,
+        -320
+      ],
+      "id": "1f3885aa-b6d8-4916-8668-91371bc176f4",
+      "name": "¿Remitente válido?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        -480
+      ],
+      "id": "a01eb421-3c03-45bd-b045-573cb47ec4ea",
+      "name": "Stop: remitente inválido"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e9c587e2-f7db-4cf0-bddd-7ba202d1c79d",
+              "name": "sessionId",
+              "value": "={{ ($json.from?.value?.[0]?.address || '').toLowerCase().trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "aa66d84c-afd7-47ac-aaed-4a87c469e4c9",
+              "name": "nombre",
+              "value": "={{ $json.from?.value?.[0]?.name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "d1ca55f3-4d72-4691-b3f2-4700f41cbdc3",
+              "name": "asunto",
+              "value": "={{ ($json.subject || '(sin asunto)').slice(0, 200) }}",
+              "type": "string"
+            },
+            {
+              "id": "b2dc3c47-609e-4077-ab4b-8c09b969503f",
+              "name": "chatInput",
+              "value": "={{ ($json.text || '').split(/\\n-- \\n|\\n(?:El|On) [\\s\\S]{0,200}?(?:escribió|wrote):/)[0].replace(/\\b\\d{12,19}\\b/g, '[NUMERO-ENMASCARADO]').trim().slice(0, 2000) }}",
+              "type": "string"
+            },
+            {
+              "id": "2886e1dd-bead-489c-bdc7-8a90a06fdf72",
+              "name": "threadId",
+              "value": "={{ $json.threadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1584,
+        -320
+      ],
+      "id": "7dcbb6d4-5fc6-4b17-b9f3-bd2cc0c8176b",
+      "name": "Limpiar payload"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "72e25f0b-3722-435e-ba8b-4f40e1289584",
+              "name": "slack_text",
+              "value": "={{ (() => {\n  const p = $('Limpiar payload').first().json;\n  const dec = $('Llamar Validador').isExecuted\n    ? ($('Llamar Validador').first().json.data?.decision || 'ESCALADO')\n    : $('Router').first().json.output.categoria;\n  const alerta = ['ESCALADO', 'RRHH'].includes(dec) ? ':rotating_light: ' : '';\n  const mail = p.sessionId.replace(/^(.).*(@.*)$/, '$1***$2');\n  return `${alerta}*${dec}* · ${p.nombre} (${mail})\\nAsunto: ${p.asunto}\\nBorrador listo en Gmail para revisión.`;\n})() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1792,
+        64
+      ],
+      "id": "e3d99b3a-8541-4bbe-b067-57d0c2d033e7",
+      "name": "Payload Slack"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0CJPEERR5E",
+          "mode": "list",
+          "cachedResultName": "rendiciones"
+        },
+        "text": "={{ $json.slack_text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        1952,
+        64
+      ],
+      "id": "a3e6cfb6-2cc0-492f-bdfd-b53b8a2443a5",
+      "name": "Slack: aviso a Administración",
+      "webhookId": "c6100480-4755-4b80-a76a-66d8dea583f1",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "9YEf0JfPeEnJYfKE",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "fbb0fe91-fe73-44a1-a18f-c2ee51267974",
+              "leftValue": "={{ $json.subject || '' }}",
+              "rightValue": "auto-?reply|automatic reply|out of office|fuera de (la )?oficina|respuesta autom|undeliverable|delivery status",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "01444d0b-1374-4fd7-88cc-fe7c5385346f",
+              "leftValue": "={{ $json.from.text || '' }}",
+              "rightValue": "no-?reply|donotreply|mailer-daemon|postmaster",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -1776,
+        -400
+      ],
+      "id": "6e3c0c04-282f-4c26-ab70-d0ba1bf6198d",
+      "name": "① ¿Es auto-reply?"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "app1MANN9uNjJ7W1Z",
+          "mode": "list",
+          "cachedResultName": "Guardián de Gastos",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblbNNJZhUiP6XyUJ",
+          "mode": "list",
+          "cachedResultName": "Memoria",
+          "cachedResultUrl": "https://airtable.com/app1MANN9uNjJ7W1Z/tblbNNJZhUiP6XyUJ"
+        },
+        "filterByFormula": "={Session_ID} = '{{ $json.Session_ID }}'",
+        "returnAll": false,
+        "limit": 1,
+        "options": {},
+        "sort": {
+          "property": []
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1552,
+        -96
+      ],
+      "id": "a358301b-cd0b-44f8-9d2d-8a989465d8ae",
+      "name": "② Look up: buscar ficha",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "VTji1BbtAQ17FrlE",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Limpiar payload').first().json.asunto }}",
+        "message": "={{ $json.output }}",
+        "options": {
+          "threadId": "={{ $('Limpiar payload').first().json.threadId }}",
+          "sendTo": "={{ $('Limpiar payload').first().json.sessionId }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1632,
+        64
+      ],
+      "id": "6b4c81ba-850a-4c19-8146-2bc1c669018d",
+      "name": "③ Create Draft (HITL)",
+      "webhookId": "d71a43d5-3375-4c0e-af11-86ea200fb5df",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3cdJeZ1bpPlZ1iSs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "① Anti auto-reply. Filtro -from:me en el trigger + IF con regex en asunto y remitente. Corta el bucle infinito."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1936,
+        -592
+      ],
+      "id": "f8e5a4fb-3055-42c3-9edc-1ef5879abd3d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "④ Set de limpieza. Solo 5 campos (sin HTML ni adjuntos), enmascara tarjetas, corta firma e historial citado. Session_ID = email del empleado. Evita el 400.",
+        "height": 96,
+        "width": 368
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        -608
+      ],
+      "id": "0aa9a41a-24f1-4e19-a10e-1a91f4adf70b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "② Look up antes de Create. CRM = Airtable (OAuth2, acceso a una sola base). Si existe → actualiza; si no → crea. Evita el 409.",
+        "height": 96
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1536,
+        80
+      ],
+      "id": "b7a66429-edd4-4da6-960e-170c8ac29de2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "③ Create Draft (HITL): nunca se envía solo, Administración revisa. Slack recibe 3 líneas con el email enmascarado.",
+        "height": 96
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        256
+      ],
+      "id": "2170986f-376f-4d18-89e9-63bc65a33094",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Router = AI Agent (Tools Agent) con taxonomía cerrada RENDICION / RRHH / OTRO.",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -272
+      ],
+      "id": "595b7542-cc34-4957-8eee-82599c90c5a9",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Router",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Leer la mesa",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Borrar la mesa",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Leer historial",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router": {
+      "main": [
+        [
+          {
+            "node": "Enrutamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrutamiento": {
+      "main": [
+        [
+          {
+            "node": "Leer historial",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Escalar a supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta fija",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Escalar a supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Validador": {
+      "main": [
+        [
+          {
+            "node": "Llamar Validador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar Validador": {
+      "main": [
+        [
+          {
+            "node": "Payload Redactor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Redactor": {
+      "main": [
+        [
+          {
+            "node": "Llamar Redactor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar Redactor": {
+      "main": [
+        [
+          {
+            "node": "log_observabilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_observabilidad": {
+      "main": [
+        [
+          {
+            "node": "Actualizar ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalar a supervisor": {
+      "main": [
+        [
+          {
+            "node": "Respuesta RRHH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identificar empleado": {
+      "main": [
+        [
+          {
+            "node": "② Look up: buscar ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene ficha?": {
+      "main": [
+        [
+          {
+            "node": "Ficha",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Crear ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ficha": {
+      "main": [
+        [
+          {
+            "node": "Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar ficha": {
+      "main": [
+        [
+          {
+            "node": "¿Más de 5 mensajes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Más de 5 mensajes?": {
+      "main": [
+        [
+          {
+            "node": "Leer la mesa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta al chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer la mesa": {
+      "main": [
+        [
+          {
+            "node": "Resumir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Resumir",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Resumir",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumir": {
+      "main": [
+        [
+          {
+            "node": "Guardar resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar resumen": {
+      "main": [
+        [
+          {
+            "node": "Borrar la mesa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Borrar la mesa": {
+      "main": [
+        [
+          {
+            "node": "Respuesta al chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer historial": {
+      "main": [
+        [
+          {
+            "node": "Payload Validador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear ficha": {
+      "main": [
+        [
+          {
+            "node": "Ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "① ¿Es auto-reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Remitente válido?": {
+      "main": [
+        [
+          {
+            "node": "Identificar empleado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: remitente inválido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar payload": {
+      "main": [
+        [
+          {
+            "node": "¿Remitente válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respuesta al chat": {
+      "main": [
+        [
+          {
+            "node": "③ Create Draft (HITL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respuesta fija": {
+      "main": [
+        [
+          {
+            "node": "③ Create Draft (HITL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respuesta RRHH": {
+      "main": [
+        [
+          {
+            "node": "③ Create Draft (HITL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Slack": {
+      "main": [
+        [
+          {
+            "node": "Slack: aviso a Administración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "① ¿Es auto-reply?": {
+      "main": [
+        [
+          {
+            "node": "Stop: auto-reply ignorado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limpiar payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "② Look up: buscar ficha": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene ficha?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "③ Create Draft (HITL)": {
+      "main": [
+        [
+          {
+            "node": "Payload Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a677df8a-be47-40ee-95a7-6a76d810bfe4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "13227c509c72e4d00dbb79fa5f0632cbb482a1085bae491a702e4ac1d708d7ce"
+  },
+  "nodeGroups": [],
+  "id": "c3imKLOU4NL0k2LR",
+  "tags": []
+}
